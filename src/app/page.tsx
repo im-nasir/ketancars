@@ -62,6 +62,26 @@ export default function HomePage() {
     let wheelAccum = 0;
     let lastWheelTime = 0;
 
+    // Ease-in easing: starts slow, accelerates — cubic bezier t^3
+    const easeIn = (t: number) => t * t * t;
+
+    const animateScroll = (from: number, to: number, duration: number, onDone: () => void) => {
+      const start = performance.now();
+      const step = (now: number) => {
+        const elapsed = now - start;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = easeIn(progress);
+        container.scrollTop = from + (to - from) * eased;
+        if (progress < 1) {
+          requestAnimationFrame(step);
+        } else {
+          container.scrollTop = to;
+          onDone();
+        }
+      };
+      requestAnimationFrame(step);
+    };
+
     const scrollToSection = (direction: 1 | -1) => {
       if (isScrolling) return;
       const sections = container.querySelectorAll<HTMLElement>('[data-theme]');
@@ -72,11 +92,12 @@ export default function HomePage() {
       isScrolling = true;
       wheelAccum = 0;
       container.style.scrollSnapType = 'none';
-      container.scrollTo({ top: nextIndex * containerHeight, behavior: 'smooth' });
-      setTimeout(() => {
+      const from = container.scrollTop;
+      const to = nextIndex * containerHeight;
+      animateScroll(from, to, 900, () => {
         container.style.scrollSnapType = 'y mandatory';
         isScrolling = false;
-      }, 1100);
+      });
     };
 
     const handleWheel = (e: WheelEvent) => {

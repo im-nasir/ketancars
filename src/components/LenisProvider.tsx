@@ -28,14 +28,16 @@ export default function LenisProvider({ children }: { children: ReactNode }) {
       instance = new Lenis({
         wrapper,
         content,
-        lerp: 0.08,
-        duration: 1.4,
+        lerp: 0.06,
+        duration: 1.6,
+        easing: (t: number) => t * t * t,
         smoothWheel: false,
       });
     } else {
       instance = new Lenis({
-        lerp: 0.08,
-        duration: 1.4,
+        lerp: 0.06,
+        duration: 1.6,
+        easing: (t: number) => t * t * t,
         smoothWheel: true,
       });
     }
