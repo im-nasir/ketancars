@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,6 +19,8 @@ const navLinks = [
 export default function Nav() {
   const { navTheme } = useNavTheme();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState('');
+  const [scrolled, setScrolled] = useState(false);
   const lenis = useLenis();
   const router = useRouter();
 
@@ -26,6 +28,34 @@ export default function Nav() {
   const colorClass = isDark ? 'text-white' : 'text-black';
   const borderClass = isDark ? 'border-white/20' : 'border-black/10';
   const barColor = isDark ? 'bg-white' : 'bg-black';
+
+  // Track active section via IntersectionObserver
+  useEffect(() => {
+    const sectionIds = navLinks.map(l => l.href.slice(1));
+    const observers: IntersectionObserver[] = [];
+
+    sectionIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const obs = new IntersectionObserver(
+        ([entry]) => { if (entry.isIntersecting) setActiveSection(id); },
+        { threshold: 0.5 }
+      );
+      obs.observe(el);
+      observers.push(obs);
+    });
+
+    return () => observers.forEach(o => o.disconnect());
+  }, []);
+
+  // Detect scroll past hero
+  useEffect(() => {
+    const container = document.getElementById('scroll-container');
+    if (!container) return;
+    const handleScroll = () => setScrolled(container.scrollTop > 80);
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     if (!href.startsWith('#')) return;
@@ -53,7 +83,7 @@ export default function Nav() {
   return (
     <>
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-6 transition-colors duration-300 ${colorClass}`}
+        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-6 transition-all duration-500 ${colorClass} ${scrolled ? 'backdrop-blur-md bg-black/10' : ''}`}
         aria-label="Main navigation"
       >
         <Link
@@ -65,17 +95,28 @@ export default function Nav() {
         </Link>
 
         <ul className={`hidden md:flex items-center gap-8 border-l ${borderClass} pl-8`}>
-          {navLinks.map(({ href, label }) => (
-            <li key={href}>
-              <Link
-                href={href}
-                onClick={(e) => handleAnchorClick(e, href)}
-                className={`text-xs tracking-[0.2em] uppercase transition-colors duration-300 hover:opacity-60 ${colorClass}`}
-              >
-                {label}
-              </Link>
-            </li>
-          ))}
+          {navLinks.map(({ href, label }) => {
+            const sectionId = href.slice(1);
+            const isActive = activeSection === sectionId;
+            return (
+              <li key={href} className="relative">
+                <Link
+                  href={href}
+                  onClick={(e) => handleAnchorClick(e, href)}
+                  className={`text-xs tracking-[0.2em] uppercase transition-all duration-300 nav-link-hover ${colorClass} ${isActive ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}
+                >
+                  {label}
+                </Link>
+                {isActive && (
+                  <motion.div
+                    layoutId="nav-indicator"
+                    className={`absolute -bottom-1 left-0 right-0 h-px ${isDark ? 'bg-white' : 'bg-black'}`}
+                    transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+                  />
+                )}
+              </li>
+            );
+          })}
         </ul>
 
         <button
@@ -84,17 +125,9 @@ export default function Nav() {
           aria-label={menuOpen ? 'Close menu' : 'Open menu'}
           aria-expanded={menuOpen}
         >
-          <span
-            className={`block h-px transition-all duration-300 ${barColor} ${menuOpen ? 'w-6 translate-y-[7px] rotate-45' : 'w-6'}`}
-            style={{ transformOrigin: 'center' }}
-          />
-          <span
-            className={`block w-6 h-px transition-all duration-300 ${barColor} ${menuOpen ? 'opacity-0' : ''}`}
-          />
-          <span
-            className={`block h-px transition-all duration-300 ${barColor} ${menuOpen ? 'w-6 -translate-y-[7px] -rotate-45' : 'w-4'}`}
-            style={{ transformOrigin: 'center' }}
-          />
+          <span className={`block h-px transition-all duration-300 ${barColor} ${menuOpen ? 'w-6 translate-y-[7px] rotate-45' : 'w-6'}`} style={{ transformOrigin: 'center' }} />
+          <span className={`block w-6 h-px transition-all duration-300 ${barColor} ${menuOpen ? 'opacity-0' : ''}`} />
+          <span className={`block h-px transition-all duration-300 ${barColor} ${menuOpen ? 'w-6 -translate-y-[7px] -rotate-45' : 'w-4'}`} style={{ transformOrigin: 'center' }} />
         </button>
       </nav>
 
@@ -108,6 +141,7 @@ export default function Nav() {
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="fixed inset-0 z-40 bg-black flex flex-col items-center justify-center md:hidden"
           >
+            <p className="text-[9px] tracking-[0.5em] uppercase text-white/20 mb-12">Navigation</p>
             <ul className="flex flex-col items-center gap-8">
               {navLinks.map(({ href, label }, i) => (
                 <motion.li
@@ -126,6 +160,7 @@ export default function Nav() {
                 </motion.li>
               ))}
             </ul>
+            <p className="text-[9px] tracking-[0.4em] uppercase text-white/15 mt-16">51.5074° N, 0.1278° W — London, England</p>
           </motion.div>
         )}
       </AnimatePresence>
