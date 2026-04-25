@@ -4,6 +4,7 @@ import './globals.css';
 import { NavThemeProvider } from '@/context/NavThemeContext';
 import Nav from '@/components/Nav';
 import AudioPlayer from '@/components/AudioPlayer';
+import LenisProvider from '@/components/LenisProvider';
 
 const cormorant = Cormorant_Garamond({
   variable: '--font-serif',
@@ -57,11 +58,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${cormorant.variable} ${jost.variable}`}>
       <body className="bg-white text-stone-900 antialiased">
-        <NavThemeProvider>
-          <Nav />
-          {children}
-          <AudioPlayer />
-        </NavThemeProvider>
+        <LenisProvider>
+          <NavThemeProvider>
+            <Nav />
+            {children}
+            <AudioPlayer />
+          </NavThemeProvider>
+        </LenisProvider>
       </body>
     </html>
   );

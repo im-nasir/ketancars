@@ -2,26 +2,53 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavTheme } from '@/context/NavThemeContext';
+import { useLenis } from '@/components/LenisProvider';
 
 const navLinks = [
-  { href: '/about', label: 'About' },
-  { href: '/collection', label: 'Collection' },
-  { href: '/services', label: 'Services' },
-  { href: '/gallery', label: 'Gallery' },
-  { href: '/press', label: 'Press' },
-  { href: '/enquiries', label: 'Enquiries' },
+  { href: '#about', label: 'About' },
+  { href: '#collection', label: 'Collection' },
+  { href: '#services', label: 'Services' },
+  { href: '#gallery', label: 'Gallery' },
+  { href: '#press', label: 'Press' },
+  { href: '#enquiries', label: 'Enquiries' },
 ];
 
 export default function Nav() {
   const { navTheme } = useNavTheme();
   const [menuOpen, setMenuOpen] = useState(false);
+  const lenis = useLenis();
+  const router = useRouter();
 
   const isDark = navTheme === 'dark';
   const colorClass = isDark ? 'text-white' : 'text-black';
   const borderClass = isDark ? 'border-white/20' : 'border-black/10';
   const barColor = isDark ? 'bg-white' : 'bg-black';
+
+  const handleAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (!href.startsWith('#')) return;
+    e.preventDefault();
+    const targetId = href.slice(1);
+    const target = document.getElementById(targetId);
+    const container = document.getElementById('scroll-container') as HTMLElement | null;
+
+    if (target && lenis) {
+      if (container) container.style.scrollSnapType = 'none';
+      lenis.scrollTo(target, {
+        offset: 0,
+        onComplete: () => {
+          if (container) container.style.scrollSnapType = 'y mandatory';
+        },
+      });
+    } else if (target) {
+      target.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      router.push(`/${href}`);
+    }
+    setMenuOpen(false);
+  };
 
   return (
     <>
@@ -42,6 +69,7 @@ export default function Nav() {
             <li key={href}>
               <Link
                 href={href}
+                onClick={(e) => handleAnchorClick(e, href)}
                 className={`text-xs tracking-[0.2em] uppercase transition-colors duration-300 hover:opacity-60 ${colorClass}`}
               >
                 {label}
@@ -90,7 +118,7 @@ export default function Nav() {
                 >
                   <Link
                     href={href}
-                    onClick={() => setMenuOpen(false)}
+                    onClick={(e) => handleAnchorClick(e, href)}
                     className="font-serif text-[clamp(2rem,8vw,3.5rem)] text-white tracking-[0.15em] hover:opacity-60 transition-opacity"
                   >
                     {label}
